@@ -1,17 +1,11 @@
 #include "ft_ping.h"
 
 void
-get_address(char **arguments)
+error_exit(char *message)
 {
-    int i = 1;
-
-    while (arguments[i])
-    {
-        if (arguments[i][0] != '-')
-        {
-            ping.dist = arguments[i];
-        }
-    }
+    printf("%s\n", strerror(errno));
+    fprintf(stderr, "%s", message);
+    exit(0);
 }
 
 void

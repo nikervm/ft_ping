@@ -22,16 +22,22 @@
 
 # define FT_PING_USAGE "Usage: ft_ping [-v verbose] [-h help] destination\n"
 # define INVALID_FLAG_ERROR		"ft_ping: invalid option -- '%c'\n"
+# define SOCKET_ERROR "Can't create socket\n"
+# define SETSOCKOPT_ERROR "Can't set options to socket\n"
 
-typedef struct  s_pg {
-    int         flags;
-    char        *dist;
-}               t_pg;
+typedef struct s_pg {
+    int             fd;
+    int             flags;
+    int             ttl;
+    struct timeval  time_out;
+    char            *dist;
+} t_pg;
 
 t_pg ping;
 
 void usage(void);
 int parse_flags(char **arguments);
-void get_address(char **arguments);
+void get_address(int arg_num, char **arguments);
+void error_exit(char *message);
 
 #endif
