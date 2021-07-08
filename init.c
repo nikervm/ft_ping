@@ -10,11 +10,31 @@ check_prev_arg(char *arg)
 }
 
 void
+get_ip(char *domain)
+{
+    // https://masandilov.ru/network/guide_to_network_programming5
+    // Также пример есть в man
+    struct addrinfo hints;
+    struct addrinfo *servinfo;
+    char address[INET_ADDRSTRLEN];
+
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_INET;     // AF_UNSPEC для IPv4 или IPv6 одновременно
+    hints.ai_socktype = SOCK_STREAM; // TCP stream-sockets
+    if (getaddrinfo(domain, NULL, &hints, &servinfo) != 0)
+        error_exit(GETADDR_ERROR);
+    // преобразуем IP в строку
+    memcpy(&ping.sockaddr, servinfo->ai_addr, sizeof(struct sockaddr_in));
+    inet_ntop(AF_INET, &ping, address, INET_ADDRSTRLEN);
+    // memcpy(&ping.ip, servinfo->ai_addr, sizeof(struct sockaddr))
+}
+
+void
 get_address(int arg_num, char **arguments)
 {
     int i = arg_num - 1;
 
-    while (i > 1)
+    while (i > 0)
     {
         if (arguments[i][0] != '-' && check_prev_arg(arguments[i - 1]))
         {

@@ -3,7 +3,7 @@
 void
 error_exit(char *message)
 {
-    printf("%s\n", strerror(errno));
+    printf("errno: %s\n", strerror(errno));
     fprintf(stderr, "%s", message);
     exit(0);
 }

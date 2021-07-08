@@ -24,13 +24,15 @@
 # define INVALID_FLAG_ERROR		"ft_ping: invalid option -- '%c'\n"
 # define SOCKET_ERROR "Can't create socket\n"
 # define SETSOCKOPT_ERROR "Can't set options to socket\n"
+# define GETADDR_ERROR "Probably, the node/service is not known (nut there are plenty of errors in addrinfo)\n"
 
 typedef struct s_pg {
-    int             fd;
-    int             flags;
-    int             ttl;
-    struct timeval  time_out;
-    char            *dist;
+    int                 fd;
+    int                 flags;
+    int                 ttl;
+    struct timeval      time_out;
+    char                *dist;
+    struct sockaddr_in  sockaddr;
 } t_pg;
 
 t_pg ping;
@@ -38,6 +40,9 @@ t_pg ping;
 void usage(void);
 int parse_flags(char **arguments);
 void get_address(int arg_num, char **arguments);
+void get_ip(char *domain);
 void error_exit(char *message);
+void set_signals();
+void header();
 
 #endif
