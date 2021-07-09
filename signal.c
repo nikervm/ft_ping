@@ -11,7 +11,14 @@
  */
 
 static void
-ctrl_c() {
+ctrl_c()
+{
+    exit(0);
+}
+
+static void
+exit_f()
+{
     exit(0);
 }
 
@@ -19,4 +26,5 @@ void
 set_signals()
 {
     signal(SIGINT, ctrl_c);
+    signal(SIGALRM, exit_f);
 }

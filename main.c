@@ -7,6 +7,10 @@ init_ping(int arg_num, char **arguments)
     ping.ttl = 64;
     ping.time_out = (struct timeval) {10, 0};
     ping.flags = parse_flags(arguments);
+    ping.seq = 1;
+    ping.own_id = getpid();
+    ping.send_num = 0;
+    ping.receive_num = 0;
     get_address(arg_num, arguments);
     get_ip(ping.dist);
 }
@@ -41,6 +45,8 @@ main(int argc, char **argv)
     {
         set_signals();
         header();
+        printf("size of icmp: %lu", sizeof(struct icmp));
+        send_packets();
     }
     return 0;
 }

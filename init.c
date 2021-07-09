@@ -15,18 +15,20 @@ get_ip(char *domain)
     // https://masandilov.ru/network/guide_to_network_programming5
     // Также пример есть в man
     struct addrinfo hints;
-    struct addrinfo *servinfo;
-    char address[INET_ADDRSTRLEN];
+    struct addrinfo *infos;
+    char ipstr[INET_ADDRSTRLEN];
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;     // AF_UNSPEC для IPv4 или IPv6 одновременно
     hints.ai_socktype = SOCK_STREAM; // TCP stream-sockets
-    if (getaddrinfo(domain, NULL, &hints, &servinfo) != 0)
+    if (getaddrinfo(domain, NULL, &hints, &infos) != 0)
         error_exit(GETADDR_ERROR);
+    memcpy(&ping.info, infos->ai_addr, sizeof(struct sockaddr_in));
     // преобразуем IP в строку
-    memcpy(&ping.sockaddr, servinfo->ai_addr, sizeof(struct sockaddr_in));
-    inet_ntop(AF_INET, &ping, address, INET_ADDRSTRLEN);
-    // memcpy(&ping.ip, servinfo->ai_addr, sizeof(struct sockaddr))
+    void *addr = &ping.info.sin_addr;
+    inet_ntop(AF_INET, addr, ipstr, sizeof(ipstr));
+    ping.address = strdup(ipstr);
+    freeaddrinfo(infos);
 }
 
 void
