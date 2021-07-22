@@ -38,3 +38,20 @@ get_destination(char *domain)
 	freeaddrinfo(infos);
 	return ft_strdup(ip_string);
 }
+
+void
+create_socket()
+{
+	int fd;
+
+	if ((fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) == -1) {
+		error_exit(SOCKET_ERROR);
+	}
+	if ((setsockopt(fd, IPPROTO_IP, IP_TTL, &ping.ttl, sizeof(ping.ttl))) == -1) {
+		error_exit(SETOPT_ERROR);
+	}
+	if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const void *)&ping.timeout, sizeof(ping.timeout))) {
+		error_exit(SETOPT_ERROR);
+	}
+	ping.fd = fd;
+}

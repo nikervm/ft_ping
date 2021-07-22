@@ -8,9 +8,13 @@
 
 # define FT_PING_USAGE		"Usage: ft_ping [-v verbose] [-h help] destination"
 # define ADDR_ERROR			"ADDR_ERROR"
+# define SOCKET_ERROR		"Can't create socket"
+# define SETOPT_ERROR		"Error while setting socket"
 
 typedef struct {
 	int					fd;
+	int 				ttl;
+	struct timeval		timeout;
 	char				*user_address;
 	char				*destination;
 	struct sockaddr_in	info;
@@ -21,6 +25,7 @@ s_ft_ping ping;
 /* init */
 char *			get_address(int arg_num, char **arguments);
 char *			get_destination(char *domain);
+void			create_socket();
 
 /* utils */
 void			usage(void);
