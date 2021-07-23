@@ -71,3 +71,9 @@ usage(void)
     printf("%s\n", FT_PING_USAGE);
     exit(0);
 }
+
+void
+ft_bzero(void *s, size_t len)
+{
+	ft_memset(s, '\0', len);
+}

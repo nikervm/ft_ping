@@ -55,3 +55,9 @@ create_socket()
 	}
 	ping.fd = fd;
 }
+
+void
+set_signals()
+{
+	signal(SIGINT, &handler_ctrl_c);
+}
