@@ -15,6 +15,7 @@
 # define SOCKET_ERROR		"Can't create socket"
 # define SETOPT_ERROR		"Error while setting socket"
 # define SETTIME_ERROR		"Can't set the time"
+# define REPLY_ERROR		"Invalid reply packet"
 
 # define DUMMY_DATA_BYTES	56
 # define ICMP_HEADER_BYTES	28

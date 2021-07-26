@@ -73,7 +73,7 @@ send_packet(s_packet *packet)
  * struct msghdr {
  * 		void			*msg_name;		необязательный адрес
  * 		socklen_t		msg_namelen;	размер адреса
- * 		struct iovec	*msg_iov;		массив приёма/передачи
+ * 		struct iovec	*msg_iov;		массив приёма/передачи / массив для scatter/gather
  * 		size_t        	msg_iovlen;		количество элементов в msg_iov
  * 		void         	*msg_control;	вспомогательные данные
  * 		size_t        	msg_controllen; размер буфера вспомогательных данны[
@@ -95,6 +95,13 @@ init_reply(s_reply *reply)
 static int
 check_reply(s_reply *reply)
 {
+	struct ip	*packet_content;
+
+	packet_content = (struct ip *)reply->receive_buffer;
+	if (packet_content->ip_p != IPPROTO_ICMP) {
+		error_exit(REPLY_ERROR);
+	}
+	reply->icmp = (struct icmp *)(reply->receive_buffer + (packet_content->ip_hl << 2));
 	return 1;
 }
 
@@ -127,6 +134,7 @@ ping_loop()
 		ping.transmitted++;
 		if (send_packet(&packet) > 0) {
 			init_reply(&reply);
+			receive_reply(&reply);
 			ping.received++;
 		}
 		ping.seq++;
