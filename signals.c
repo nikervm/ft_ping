@@ -4,5 +4,6 @@ void
 handler_ctrl_c(int signal)
 {
 	print_result();
+	free(ping.destination);
 	exit(0);
 }

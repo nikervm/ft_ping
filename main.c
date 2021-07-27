@@ -36,5 +36,6 @@ int main(int ac, char **av)
 	print_header();
     ping_loop();
     print_result();
+    free(ping.destination);
     exit(0);
 }
