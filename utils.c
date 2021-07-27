@@ -68,7 +68,14 @@ error_exit(char *message)
 void
 usage(void)
 {
-    printf("%s\n", FT_PING_USAGE);
+    printf("Usage\n"
+				"\tft_ping [options] <destination>\n"
+				"Options:\n"
+				"\t-c <count>\t\t\tstop after <count> replies\n"
+				"\t-i <interval>\t\tsecond between sending each packet\n"
+				"\t-t <ttl>\t\t\tdefine time to live\n"
+				"\t-s <size>\t\t\tuse <size> as number of data bytes to be sent\n"
+				"\t-f\t\t\t\t\tflood ping\n");
     exit(0);
 }
 
@@ -76,4 +83,10 @@ void
 ft_bzero(void *s, size_t len)
 {
 	ft_memset(s, '\0', len);
+}
+
+double
+time_diff(struct timeval start, struct timeval end)
+{
+	return ((double)end.tv_sec - (double)start.tv_sec) * 1000 + ((double)end.tv_usec - (double)start.tv_usec) / 1000;
 }

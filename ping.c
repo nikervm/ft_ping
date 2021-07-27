@@ -1,7 +1,8 @@
+#include <math.h>
 #include "ft_ping.h"
 
 void
-display_header()
+print_header()
 {
 	printf("PING %s (%s) %d(%d) bytes of data.\n",
 		ping.user_address,
@@ -10,11 +11,67 @@ display_header()
 		DUMMY_DATA_BYTES + ICMP_HEADER_BYTES);
 }
 
-void
-display_result()
+static double
+cal_mdev()
 {
-	printf("--- %s ping statistics ---",
-		ping.user_address);
+	double		average_time;
+	double		average_squared_time;
+
+	average_time = ping.sum_time / ping.transmitted;
+	average_squared_time = ping.double_sum_time / ping.transmitted;
+	return sqrt(fabs(average_squared_time - average_time * average_time));
+}
+
+/*
+ * --- google.com ping statistics ---
+ * 1 packets transmitted, 1 received, 0% packet loss, time 0ms
+ * rtt min/avg/max/mdev = 14.777/14.777/14.777/0.000 ms
+ */
+void
+print_result()
+{
+	if (ping.transmitted != 0) {
+		if (gettimeofday(&ping.end_time, NULL) == -1) {
+			error_exit(SETTIME_ERROR);
+		}
+		printf("\n--- %s ping statistics ---\n",
+			   ping.user_address);
+		if (!ping.invalid) {
+			printf("%d packets transmitted, %d received, %d%% packet loss, time %.0lfms\n",
+		  ping.transmitted,
+		  ping.received,
+		  100 - (ping.received * 100) / ping.transmitted,
+		  time_diff(ping.start_time, ping.end_time));
+		} else {
+			printf("%d packets transmitted, %d received, +%d errors, %d%% packet loss, time %.0lfms\n",
+		  ping.transmitted,
+		  ping.received,
+		  ping.invalid,
+		  100 - (ping.received * 100) / ping.transmitted,
+		  time_diff(ping.start_time, ping.end_time));
+		}
+		if (ping.received != 0) {
+			printf("rtt min/avg/max/mdev = %.3lf/%.3lf/%.3lf/%.3lf ms\n",
+		  ping.min_time,
+		  ping.sum_time / ping.transmitted,
+		  ping.max_time,
+		  // average diff between "ping"'s latency and average latency
+		  cal_mdev());
+		}
+	}
+}
+
+static void
+statistic(double diff)
+{
+	ping.sum_time += diff;
+	ping.double_sum_time += diff * diff;
+	if (ping.min_time > diff || ping.min_time == 0) {
+		ping.min_time = diff;
+	}
+	if (ping.max_time < diff || ping.max_time == 0) {
+		ping.max_time = diff;
+	}
 }
 
 // https://i.stack.imgur.com/Yp1XM.png
@@ -101,11 +158,17 @@ check_reply(s_reply *reply)
 	if (packet_content->ip_p != IPPROTO_ICMP) {
 		error_exit(REPLY_ERROR);
 	}
-	reply->icmp = (struct icmp *)(reply->receive_buffer + (packet_content->ip_hl << 2));
+	reply->icmp = (struct icmp *)(reply->receive_buffer + ((int)packet_content->ip_hl << 2));
+	if (reply->icmp->icmp_type == 11 && reply->icmp->icmp_code == 0) {
+		return -1;
+	} else if (reply->icmp->icmp_id != ping.id || reply->icmp->icmp_seq != ping.seq) {
+		init_reply(reply);
+		return receive_reply(reply);
+	}
 	return 1;
 }
 
-static int
+int
 receive_reply(s_reply *reply)
 {
 	if ((reply->received_bytes = recvmsg(ping.fd, &reply->header, 0)) > 0) {
@@ -113,6 +176,70 @@ receive_reply(s_reply *reply)
 	} else {
 		// print error std
 		return 0;
+	}
+}
+
+static void
+print_seq(s_reply *reply, struct timeval start, struct timeval end)
+{
+	double diff = time_diff(start, end);
+
+	if (ping.flags & D_FLAG) {
+		printf("[%ld.%06ld] ", end.tv_sec, end.tv_usec);
+	}
+	// 64 bytes from localhost (127.0.0.1): icmp_seq=3 ttl=64 time=0.045 ms
+	printf("%d bytes from %s (%s) icmp_seq=%d ttl=%d time=%.*lf ms\n",
+		reply->received_bytes,
+		ping.user_address,
+		ping.destination,
+		ping.seq,
+		ping.ttl,
+		diff >= 1 ? 1 : 3,
+		diff);
+	statistic(diff);
+}
+
+static void
+print_expired(s_reply *reply)
+{
+	struct ip *packet_content;
+	char ip[INET_ADDRSTRLEN];
+	char hostname[NI_MAXHOST];
+	struct sockaddr_in tmp;
+
+	// ttl = 1
+	// From _gateway (192.168.101.1) icmp_seq=3 Time to live exceeded
+	// ttl = 2
+	// From lo247.core-01.lefort.countrycom.ru (213.251.247.129) icmp_seq=2 Time to live exceeded
+	packet_content = (struct ip *)reply->receive_buffer;
+	inet_ntop(AF_INET, &packet_content->ip_src, ip, INET_ADDRSTRLEN);
+	tmp.sin_addr = packet_content->ip_src;
+	tmp.sin_family = AF_INET;
+	tmp.sin_port = 0;
+	if (getnameinfo((struct sockaddr *)&tmp, sizeof(struct sockaddr_in),
+			hostname, sizeof(hostname), NULL, 0, NI_NAMEREQD) >= 0) {
+		printf("From %s (%s): icmp_seq=%d Time to live exceeded\n",
+		 hostname,
+		 ip,
+		 ping.seq);
+	} else {
+		printf("From %s: icmp_seq=%d Time to live exceeded\n",
+		 ip,
+		 ping.seq);
+	}
+}
+
+static void
+wait_interval(struct timeval start)
+{
+	struct timeval res;
+
+	res.tv_sec = start.tv_sec + ping.interval;
+	res.tv_usec = start.tv_usec;
+	while (timercmp(&start, &res, <)) {
+		if (gettimeofday(&start, NULL) == -1) {
+			error_exit(SETTIME_ERROR);
+		}
 	}
 }
 
@@ -125,6 +252,9 @@ ping_loop()
 	struct timeval s_timestamp;
 	struct timeval e_timestamp;
 
+	if (gettimeofday(&ping.start_time, NULL) == -1) {
+		error_exit(SETTIME_ERROR);
+	}
 	while (1)
 	{
 		if (gettimeofday(&s_timestamp, NULL) == -1) {
@@ -134,10 +264,25 @@ ping_loop()
 		ping.transmitted++;
 		if (send_packet(&packet) > 0) {
 			init_reply(&reply);
-			receive_reply(&reply);
-			ping.received++;
+			int res = receive_reply(&reply);
+			if (res == 1) {
+				ping.received++;
+				if (gettimeofday(&e_timestamp, NULL) == -1) {
+					error_exit(SETTIME_ERROR);
+				}
+				print_seq(&reply, s_timestamp, e_timestamp);
+			} else if (res == -1) {
+				ping.invalid++;
+				print_expired(&reply);
+			}
 		}
 		ping.seq++;
-		break;
+		if (ping.flags & C_FLAG) {
+			ping.count--;
+			if (ping.count <= 0) {
+				break;
+			}
+		}
+		wait_interval(s_timestamp);
 	}
 }

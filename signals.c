@@ -3,5 +3,6 @@
 void
 handler_ctrl_c(int signal)
 {
+	print_result();
 	exit(0);
 }

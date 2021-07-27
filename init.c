@@ -1,22 +1,81 @@
 #include "ft_ping.h"
 
+static void
+get_value(char **argv, int i, char flag, int *value)
+{
+	if (argv[i][1] == flag && argv[i][2] == '\0' && argv[i + 1] != NULL) {
+		*value = atoi(argv[i + 1]);
+		return;
+	}
+	error_exit(BAD_FLAG);
+}
+
+static void
+get_flag(int *flags, char **argv, int i)
+{
+	for (int j = 1; argv[i][j]; j++) {
+		switch (argv[i][j]) {
+			case 'c':
+				*flags |= C_FLAG;
+				get_value(argv, i, 'c', &ping.count);
+				break;
+			case 'i':
+				*flags |= I_FLAG;
+				get_value(argv, i, 'i', &ping.interval);
+				break;
+			case 't':
+				*flags |= T_FLAG;
+				get_value(argv, i, 't', &ping.ttl);
+				break;
+			case 'D':
+				*flags |= D_FLAG;
+				break;
+			case 'f':
+				*flags |= F_FLAG;
+				break;
+		}
+	}
+}
+
+int
+parse_flags(char **argv)
+{
+	int flags = 0;
+
+	for (int i = 1; argv[i]; i++) {
+		if (argv[i][0] == '-') {
+			get_flag(&flags, argv, i);
+		}
+	}
+	return flags;
+}
+
 static int
-check_prev_arg(char *argument)
+check_prev_arg(const char *argument, int pos)
 {
 	// -c 1 localhost
 	// проверка для других флагов
-	return 1;
+	if (pos == 1) {
+		return 1;
+	}
+	if (argument[0] != '-') {
+		return 1;
+	}
+	if (argument[1] != 'c' && argument[1] != 'i' && argument[1] != 't') {
+		return 1;
+	}
+	return 0;
 }
 
 char *
 get_address(int arg_num, char **arguments)
 {
     for (int i = arg_num - 1; i > 0; i--) {
-        if (arguments[i][0] != '-' && check_prev_arg(arguments[i - 1])) {
+        if (arguments[i][0] != '-' && check_prev_arg(arguments[i - 1], i)) {
             return arguments[i];
         }
     }
-    error_exit(FT_PING_USAGE);
+    usage();
 }
 
 char *
