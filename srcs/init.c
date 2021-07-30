@@ -15,6 +15,9 @@ get_flag(int *flags, char **argv, int i)
 {
 	for (int j = 1; argv[i][j]; j++) {
 		switch (argv[i][j]) {
+			case 'v':
+				*flags |= V_FLAG;
+				break;
 			case 'c':
 				*flags |= C_FLAG;
 				get_value(argv, i, 'c', &ping.count);

@@ -90,3 +90,24 @@ time_diff(struct timeval start, struct timeval end)
 {
 	return ((double)end.tv_sec - (double)start.tv_sec) * 1000 + ((double)end.tv_usec - (double)start.tv_usec) / 1000;
 }
+
+void
+error_output(char *msg)
+{
+	fprintf(stderr, "%s\n", msg);
+}
+
+void
+display_flags()
+{
+	printf("ft_ping: verbose mode activated");
+	if (ping.flags & T_FLAG)
+		printf(", IP Time to live set to %d", ping.ttl);
+	if (ping.flags & C_FLAG)
+		printf(", packet count set to %d", ping.count);
+	if (ping.flags & I_FLAG)
+		printf(", interval between packets set to %d", ping.interval);
+	if (ping.flags & F_FLAG)
+		printf(", flood mode activated");
+	printf("\n");
+}

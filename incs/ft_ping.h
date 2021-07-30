@@ -7,8 +7,13 @@
 # include <arpa/inet.h>
 # include <signal.h>
 # include <sys/time.h>
+//mac
+# include <netinet/ip.h>
+//
 # include <netinet/ip_icmp.h>
 # include <unistd.h>
+# include <math.h>
+# include <errno.h>
 
 # define ADDR_ERROR			"ADDR_ERROR"
 # define SOCKET_ERROR		"Can't create socket"
@@ -16,6 +21,8 @@
 # define SETTIME_ERROR		"Can't set the time"
 # define REPLY_ERROR		"Invalid reply packet"
 # define BAD_FLAG			"Invalid flag or parameter"
+# define TIMEOUT_ERROR		"Request timed out"
+# define RECV_ERROR			"Error while trying to access ICMP reply"
 
 # define DUMMY_DATA_BYTES	56
 # define ICMP_HEADER_BYTES	28
@@ -27,7 +34,8 @@
 # define D_FLAG 		0b00001000
 # define F_FLAG 		0b00010000
 # define H_FLAG 		0b00100000
-# define INVALID_FLAG	0b01000000
+# define V_FLAG 		0b01000000
+# define INVALID_FLAG	0b10000000
 
 typedef struct {
 	struct icmp	header;
@@ -85,6 +93,8 @@ char *			ft_strdup(const char *string);
 size_t			ft_strlen(const char *str);
 void			ft_bzero(void *s, size_t len);
 double			time_diff(struct timeval start, struct timeval end);
+void			display_flags(void);
+void			error_output(char *message);
 
 /* signals */
 void			handler_ctrl_c(int signal);

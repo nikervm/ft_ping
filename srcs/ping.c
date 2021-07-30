@@ -1,4 +1,3 @@
-#include <math.h>
 #include "ft_ping.h"
 
 void
@@ -156,6 +155,8 @@ check_reply(s_reply *reply)
 
 	packet_content = (struct ip *)reply->receive_buffer;
 	if (packet_content->ip_p != IPPROTO_ICMP) {
+		if (ping.flags & V_FLAG)
+			error_output(REPLY_ERROR);
 		error_exit(REPLY_ERROR);
 	}
 	reply->icmp = (struct icmp *)(reply->receive_buffer + ((int)packet_content->ip_hl << 2));
@@ -174,7 +175,13 @@ receive_reply(s_reply *reply)
 	if ((reply->received_bytes = recvmsg(ping.fd, &reply->header, 0)) > 0) {
 		return check_reply(reply);
 	} else {
-		// print error std
+		if ((errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR))
+		{
+			if (ping.flags & V_FLAG)
+				error_output(TIMEOUT_ERROR);
+		}
+		else
+			error_output(RECV_ERROR);
 		return 0;
 	}
 }
@@ -185,7 +192,7 @@ print_seq(s_reply *reply, struct timeval start, struct timeval end)
 	double diff = time_diff(start, end);
 
 	if (ping.flags & D_FLAG) {
-		printf("[%ld.%06ld] ", end.tv_sec, end.tv_usec);
+		printf("[%ld.%06d] ", end.tv_sec, end.tv_usec);
 	}
 	// 64 bytes from localhost (127.0.0.1): icmp_seq=3 ttl=64 time=0.045 ms
 	printf("%d bytes from %s (%s) icmp_seq=%d ttl=%d time=%.*lf ms\n",

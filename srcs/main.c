@@ -31,6 +31,8 @@ int main(int ac, char **av)
     if (ac == 1)
         usage();
     init_ping(ac, av);
+    if (ping.flags & V_FLAG)
+    	display_flags();
     create_socket();
     set_signals();
 	print_header();
